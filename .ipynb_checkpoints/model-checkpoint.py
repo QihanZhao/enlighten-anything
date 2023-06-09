@@ -15,7 +15,7 @@ class SemanticFusionUnit(nn.Module):
         #TODO: WEIGHT initial
         #TODO: 模块嵌入【预处理的数据】
         #TODO：TEST的流程【SAM】
-        #TODO：数据归一化
+        #TODO：数据归一化，因为涉及加法
         
     def forward(self, fea, sem):
         cat = torch.cat((fea, sem), dim = 1) # (b, c, h, w)
@@ -47,8 +47,7 @@ class EnhanceNetwork(nn.Module):
 
         self.blocks = nn.ModuleList()
         for i in range(layers):
-            # self.blocks.append(self.fusion)
-            self.blocks.append((self.fusion, self.conv))
+            self.blocks.append(self.conv)
 
         self.out_conv = nn.Sequential(
             nn.Conv2d(in_channels=channels, out_channels=3, kernel_size=3, stride=1, padding=1),
@@ -57,8 +56,8 @@ class EnhanceNetwork(nn.Module):
 
     def forward(self, input, sem):
         fea = self.in_conv(input)
-        for fusion, conv in self.blocks:
-            fea = fea + fusion(fea, sem)
+        fea = fea + self.fusion(fea, sem)
+        for conv in self.blocks:
             fea = fea + conv(fea)
         fea = self.out_conv(fea)
 
