@@ -2,6 +2,27 @@ import torch
 import torch.nn as nn
 from loss import LossFunction
 
+class SemanticFusionUnit(nn.Module):
+    def __init__(self, channels):
+        super(SemanticFusionUnit, self).__init__()
+        
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels=2*channels, out_channels=channels, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(channels),
+            nn.ReLU()
+        )
+        
+        #TODO: WEIGHT initial
+        #TODO: 模块嵌入【预处理的数据】
+        #TODO：TEST的流程【SAM】
+        #TODO：数据归一化
+        
+    def forward(self, fea, sem):
+        cat = torch.cat((fea, sem), dim = 1) # (b, c, h, w)
+        fusion = self.conv(cat)
+        return fusion
+        
+        
 
 class EnhanceNetwork(nn.Module):
     def __init__(self, layers, channels):
@@ -15,6 +36,8 @@ class EnhanceNetwork(nn.Module):
             nn.Conv2d(in_channels=3, out_channels=channels, kernel_size=kernel_size, stride=1, padding=padding),
             nn.ReLU()
         )
+        
+        self.fusion = SemanticFusionUnit(channels)
 
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=1, padding=padding),
@@ -24,16 +47,18 @@ class EnhanceNetwork(nn.Module):
 
         self.blocks = nn.ModuleList()
         for i in range(layers):
-            self.blocks.append(self.conv)
+            # self.blocks.append(self.fusion)
+            self.blocks.append((self.fusion, self.conv))
 
         self.out_conv = nn.Sequential(
             nn.Conv2d(in_channels=channels, out_channels=3, kernel_size=3, stride=1, padding=1),
             nn.Sigmoid()
         )
 
-    def forward(self, input):
+    def forward(self, input, sem):
         fea = self.in_conv(input)
-        for conv in self.blocks:
+        for fusion, conv in self.blocks:
+            fea = fea + fusion(fea, sem)
             fea = fea + conv(fea)
         fea = self.out_conv(fea)
 
@@ -103,13 +128,13 @@ class Network(nn.Module):
         if isinstance(m, nn.BatchNorm2d):
             m.weight.data.normal_(1., 0.02)
 
-    def forward(self, input):
+    def forward(self, input, sem):
 
         ilist, rlist, inlist, attlist = [], [], [], []
         input_op = input
         for i in range(self.stage):
             inlist.append(input_op)
-            i = self.enhance(input_op)
+            i = self.enhance(input_op, sem)
             r = input / i
             r = torch.clamp(r, 0, 1)
             att = self.calibrate(r)
