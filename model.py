@@ -13,9 +13,9 @@ class SemanticFusionUnit(nn.Module):
         )
         
         #TODO: WEIGHT initial
-        #TODO: 模块嵌入【预处理的数据】
+        #TODO: 模块嵌入【预处理的数据】->dataloader
         #TODO：TEST的流程【SAM】
-        #TODO：数据归一化，因为涉及加法
+        #TODO：数据归一化，因为涉及加法 ->dataloader【x】
         
     def forward(self, fea, sem):
         cat = torch.cat((fea, sem), dim = 1) # (b, c, h, w)

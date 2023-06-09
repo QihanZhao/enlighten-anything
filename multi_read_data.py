@@ -7,55 +7,39 @@ from glob import glob
 import torchvision.transforms as transforms
 import os
 
-batch_w = 600
-batch_h = 400
-
-
 class MemoryFriendlyLoader(torch.utils.data.Dataset):
-    def __init__(self, img_dir, task):
+    def __init__(self, img_dir, sem_dir):
         self.low_img_dir = img_dir
-        self.task = task
-        self.train_low_data_names = []
+        self.sem_dir = sem_dir
+        
+        self.low_img_names = []
+        self.sem_names = []
+        for name in os.listdir(self.low_img_dir):
+            if name.endswith('.jpg') or name.endswith('.png'):
+                self.low_img_names.append(os.path.join(self.low_img_dir, name))
+                self.sem_names.append(os.path.join(self.sem_dir, f'{os.path.splitext(name)[0]}_semantic.png'))                
 
-        for root, dirs, names in os.walk(self.low_img_dir):
-            for name in names:
-                self.train_low_data_names.append(os.path.join(root, name))
-
-        self.train_low_data_names.sort()
-        self.count = len(self.train_low_data_names)
+        self.count = len(self.low_img_names)
 
         transform_list = []
-        transform_list += [transforms.ToTensor()]
+        transform_list += [transforms.ToTensor()] # ToTensor()包含将数据规范到(0,1)
+        # transform_list += [transforms.Normalize((0, 0, 0), (255, 255, 255))]
         self.transform = transforms.Compose(transform_list)
 
     def load_images_transform(self, file):
         im = Image.open(file).convert('RGB')
-        img_norm = self.transform(im).numpy()
-        img_norm = np.transpose(img_norm, (1, 2, 0))
+        img_norm = self.transform(im)
         return img_norm
 
     def __getitem__(self, index):
 
-        low = self.load_images_transform(self.train_low_data_names[index])
+        low_img = self.load_images_transform(self.low_img_names[index])
+        sem = self.load_images_transform(self.sem_names[index])
 
-        h = low.shape[0]
-        w = low.shape[1]
-        #
-        h_offset = random.randint(0, max(0, h - batch_h - 1))
-        w_offset = random.randint(0, max(0, w - batch_w - 1))
-        #
-        # if self.task != 'test':
-        #     low = low[h_offset:h_offset + batch_h, w_offset:w_offset + batch_w]
+        img_name = self.low_img_names[index].split('\\')[-1]
+        sem_name = self.sem_names[index].split('\\')[-1]
 
-        low = np.asarray(low, dtype=np.float32)
-        low = np.transpose(low[:, :, :], (2, 0, 1))
-
-        img_name = self.train_low_data_names[index].split('\\')[-1]
-        # if self.task == 'test':
-        #     # img_name = self.train_low_data_names[index].split('\\')[-1]
-        #     return torch.from_numpy(low), img_name
-
-        return torch.from_numpy(low), img_name
+        return low_img, sem, img_name, sem_name
 
     def __len__(self):
         return self.count

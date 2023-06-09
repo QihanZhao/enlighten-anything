@@ -31,7 +31,7 @@ test_queue = torch.utils.data.DataLoader(
 
 
 def save_images(tensor, path):
-    image_numpy = tensor[0].cpu().float().numpy()
+    image_numpy = tensor[0].cpu().float().numpy()  # test_queue's batch_size==1
     image_numpy = (np.transpose(image_numpy, (1, 2, 0)))
     im = Image.fromarray(np.clip(image_numpy * 255.0, 0, 255.0).astype('uint8'))
     im.save(path, 'png')
