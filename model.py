@@ -12,7 +12,7 @@ class SemanticFusionUnit(nn.Module):
             nn.ReLU()
         )
         
-        #TODO: WEIGHT initial
+        #TODO: WEIGHT initial 【x】
         #TODO: 模块嵌入【预处理的数据】->dataloader 【x】
         #TODO：TEST的流程【SAM】
         #TODO：数据归一化，因为涉及加法 ->dataloader【x】

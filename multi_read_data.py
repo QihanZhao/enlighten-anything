@@ -36,8 +36,8 @@ class MemoryFriendlyLoader(torch.utils.data.Dataset):
         low_img = self.load_images_transform(self.low_img_names[index])
         sem = self.load_images_transform(self.sem_names[index])
 
-        img_name = self.low_img_names[index].split('\\')[-1]
-        sem_name = self.sem_names[index].split('\\')[-1]
+        img_name = os.path.basename(self.low_img_names[index])
+        sem_name = os.path.basename(self.sem_names[index])
 
         return low_img, sem, img_name, sem_name
 
