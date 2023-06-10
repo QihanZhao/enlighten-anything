@@ -13,9 +13,9 @@ class SemanticFusionUnit(nn.Module):
         )
         
         #TODO: WEIGHT initial
-        #TODO: 模块嵌入【预处理的数据】->dataloader
+        #TODO: 模块嵌入【预处理的数据】->dataloader 【x】
         #TODO：TEST的流程【SAM】
-        #TODO：数据归一化，因为涉及加法 ->dataloader
+        #TODO：数据归一化，因为涉及加法 ->dataloader【x】
         
     def forward(self, fea, sem):
         cat = torch.cat((fea, sem), dim = 1) # (b, c, h, w)
@@ -144,8 +144,8 @@ class Network(nn.Module):
 
         return ilist, rlist, inlist, attlist
 
-    def _loss(self, input):
-        i_list, en_list, in_list, _ = self(input)
+    def _loss(self, input, sem):
+        i_list, en_list, in_list, _ = self(input, sem)
         loss = 0
         for i in range(self.stage):
             loss += self._criterion(in_list[i], i_list[i])

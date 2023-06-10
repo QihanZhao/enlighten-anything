@@ -144,8 +144,8 @@ class Network(nn.Module):
 
         return ilist, rlist, inlist, attlist
 
-    def _loss(self, input, sem):
-        i_list, en_list, in_list, _ = self(input, sem)
+    def _loss(self, input):
+        i_list, en_list, in_list, _ = self(input)
         loss = 0
         for i in range(self.stage):
             loss += self._criterion(in_list[i], i_list[i])

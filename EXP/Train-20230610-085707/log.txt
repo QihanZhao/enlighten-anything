@@ -1,0 +1,4 @@
+2023-06-10 08:57:07,676 train file name = ('', 'test_train.py')
+2023-06-10 08:57:07,685 gpu device = 0
+2023-06-10 08:57:07,685 args = Namespace(batch_size=64, cuda=True, epochs=1000, gpu='0', lr=0.0003, save='EXP//Train-20230610-085707', seed=2, stage=3)
+2023-06-10 08:57:12,111 model size = 0.006048
