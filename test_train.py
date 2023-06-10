@@ -47,15 +47,15 @@ logging.getLogger().addHandler(fh)
 
 logging.info("train file name = %s", os.path.split(__file__))
 
-if torch.cuda.is_available():
-    if args.cuda:
-        torch.set_default_tensor_type('torch.cuda.FloatTensor')
-    if not args.cuda:
-        print("WARNING: It looks like you have a CUDA device, but aren't " +
-              "using CUDA.\nRun with --cuda for optimal training speed.")
-        torch.set_default_tensor_type('torch.FloatTensor')
-else:
-    torch.set_default_tensor_type('torch.FloatTensor')
+# if torch.cuda.is_available():
+#     if args.cuda:
+#         torch.set_default_tensor_type('torch.cuda.FloatTensor')
+#     if not args.cuda:
+#         print("WARNING: It looks like you have a CUDA device, but aren't " +
+#               "using CUDA.\nRun with --cuda for optimal training speed.")
+#         torch.set_default_tensor_type('torch.FloatTensor')
+# else:
+#     torch.set_default_tensor_type('torch.FloatTensor')
 
 
 def save_images(tensor, path):
@@ -98,12 +98,17 @@ def main():
     TrainDataset = MemoryFriendlyLoader(img_dir='../LOL/train480/low', sem_dir = '../LOL/train480/high_semantic')
     ValDataset = MemoryFriendlyLoader(img_dir='../LOL/val5/low', sem_dir = '../LOL/train480/high_semantic')
 
+    # from torch.utils.data import RandomSampler
     train_queue = torch.utils.data.DataLoader(
         TrainDataset, batch_size=args.batch_size,
-        pin_memory=True, num_workers=0, shuffle=True)
+        pin_memory=True, num_workers=0, 
+        shuffle=True,
+        # sampler=RandomSampler(TrainDataset, generator=torch.Generator(device='cuda'))
+    )
     val_queue = torch.utils.data.DataLoader(
         ValDataset, batch_size=1,
-        pin_memory=True, num_workers=0, shuffle=True)
+        pin_memory=True, num_workers=0, shuffle=True
+    )
 
 
     total_step = 0
@@ -113,7 +118,8 @@ def main():
         losses = []
         for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(train_queue):
             total_step += 1
-            input = Variable(in_, requires_grad=False).cuda()
+            in_ = Variable(in_, requires_grad=False).cuda()
+            sem_ = Variable(sem_, requires_grad=False).cuda()
             
             # 向前传播；计算损失
             loss = model._loss(in_, sem_)
