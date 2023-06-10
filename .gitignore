@@ -1,1 +1,10 @@
-EXP
+# Ignore logs and data files
+EXP/
+data/
+segment_anything/sam_vit_h_4b8939.pth
+
+# Ignore compiled binaries and cache
+.ipynb_checkpoints
+__pycache__
+
+# Ignore editor files

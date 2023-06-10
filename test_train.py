@@ -17,7 +17,7 @@ from model import *
 from multi_read_data import MemoryFriendlyLoader
 
 # 该脚本命令行参数 可选项
-parser = argparse.ArgumentParser("SCI")
+parser = argparse.ArgumentParser("enlighten-anything")
 parser.add_argument('--batch_size', type=int, default=1, help='batch size')
 parser.add_argument('--cuda', type=bool, default=True, help='Use CUDA to train model')
 parser.add_argument('--gpu', type=str, default='0', help='gpu device id')
@@ -27,6 +27,8 @@ parser.add_argument('--lr', type=float, default=0.0003, help='learning rate')
 parser.add_argument('--stage', type=int, default=3, help='epochs')
 parser.add_argument('--save', type=str, default='EXP/', help='location of the data corpus')
 parser.add_argument('--pretrain', type=str, default=None, help='pretrained weights directory')
+parser.add_argument('--train_dir', type=str, default='data/LOL/train480/low', help='training data directory')
+parser.add_argument('--val_dir', type=str, default='data/LOL/val5/low', help='training data directory')
 args = parser.parse_args()
 
 # 根据命令行参数进行设置
@@ -54,12 +56,18 @@ def save_images(tensor, path):
 
 def model_init(model):
     if(args.pretrain==None):
-        model.enhance.in_conv.apply(model.weights_init)
-        model.enhance.conv.apply(model.weights_init)
-        model.enhance.out_conv.apply(model.weights_init)
-        model.calibrate.in_conv.apply(model.weights_init)
-        model.calibrate.convs.apply(model.weights_init)
-        model.calibrate.out_conv.apply(model.weights_init)
+        # model.enhance.in_conv.apply(model.weights_init)
+        # model.enhance.conv.apply(model.weights_init)
+        # model.enhance.out_conv.apply(model.weights_init)
+        # model.calibrate.in_conv.apply(model.weights_init)
+        # model.calibrate.convs.apply(model.weights_init)
+        # model.calibrate.out_conv.apply(model.weights_init)
+        
+        # model.enhance.apply(model.weights_init)
+        # model.calibrate.apply(model.weights_init)
+ 
+        model.apply(model.weights_init)
+
     else:
         pretrained_dict = torch.load(args.pretrain)
         model_dict = model.state_dict()
@@ -92,6 +100,7 @@ def main():
     # 模型
     model = Network(stage=args.stage)
     model_init(model)
+    return
         # GPU训练的准备2: 模型放到GPU
     model = model.cuda()
         # 打一个日志记录模型大小
@@ -102,9 +111,11 @@ def main():
     optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), 
                                  lr=args.lr*100, betas=(0.9, 0.999), weight_decay=3e-4)
 
-    # 数据集
-    TrainDataset = MemoryFriendlyLoader(img_dir='../LOL/train480/low', sem_dir = '../LOL/train480/high_semantic')
-    ValDataset = MemoryFriendlyLoader(img_dir='../LOL/val5/low', sem_dir = '../LOL/val5/high_semantic')
+    # 数据集 
+    TrainDataset = MemoryFriendlyLoader(img_dir=args.train_dir,        #'../LOL/train480/semantic'
+                                        sem_dir = os.path.join(os.path.split(args.train_dir)[0], 'high_semantic')) 
+    ValDataset = MemoryFriendlyLoader(img_dir=args.val_dir, 
+                                      sem_dir = os.path.join(os.path.split(args.val_dir)[0], 'high_semantic'))
     # from torch.utils.data import RandomSampler
     train_queue = torch.utils.data.DataLoader(
         TrainDataset, batch_size=args.batch_size,
@@ -143,7 +154,7 @@ def main():
 
         logging.info('train: epoch %3d: average_loss %f', epoch, np.average(losses))
         logging.info('----------')
-        utils.save(model, os.path.join(model_path, 'weights_%d.pt' % epoch))
+        utils.save(model, os.path.join(model_path, f'weights_{epoch}.pt'))
 
 
         model.eval()
