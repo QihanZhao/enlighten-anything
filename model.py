@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from loss import LossFunction
+from Fuse_Block import TransformerBlock
 
 class SemanticFusionUnit(nn.Module):
     def __init__(self, channels):
@@ -37,7 +38,8 @@ class EnhanceNetwork(nn.Module):
             nn.ReLU()
         )
         
-        self.fusion = SemanticFusionUnit(channels)
+        # self.fusion = SemanticFusionUnit(channels)
+        self.fusion = TransformerBlock(channels, channels, num_heads=3)
 
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=1, padding=padding),

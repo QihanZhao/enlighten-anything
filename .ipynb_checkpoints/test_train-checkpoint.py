@@ -74,10 +74,10 @@ def model_init(model):
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
         
-        # for param in model.parameters():
-        #     param.requires_grad = False
-        # for param in model.enhance.fusion.parameters():
-        #     param.requires_grad = True
+        for param in model.parameters():
+            param.requires_grad = False
+        for param in model.enhance.fusion.parameters():
+            param.requires_grad = True
 
 def main():
     logging.info("train file name = %s", os.path.split(__file__))
@@ -100,7 +100,6 @@ def main():
     # 模型
     model = Network(stage=args.stage)
     model_init(model)
-    return
         # GPU训练的准备2: 模型放到GPU
     model = model.cuda()
         # 打一个日志记录模型大小
