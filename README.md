@@ -18,4 +18,6 @@
 `utils.py`
 
 ## Train and Test
-`train.py` `test.py` `evaluate.py`
+`train.py`
+`test.py`
+`evaluate.py`
