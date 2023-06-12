@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from loss import LossFunction
-from Fuse_Block import TransformerBlock
+from fuse_block import TransformerBlock
 
 class SemanticFusionUnit(nn.Module):
     def __init__(self, channels):

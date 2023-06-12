@@ -9,6 +9,7 @@ from skimage.metrics import structural_similarity as compare_ssim
 import argparse
 parser = argparse.ArgumentParser("enlighten-anything")
 parser.add_argument('--test_dir', type=str, default='test_output', help='training data directory')
+parser.add_argument('--test_gt_dir', type=str, default='data/LOL/test15/high', help='training data directory')
 args = parser.parse_args()
 
 def calc_psnr(im1, im2):
@@ -49,6 +50,7 @@ def evaluate_raindrop(in_dir, gt_dir):
 
 
 if __name__ == '__main__':
-    ave_psnr, ave_ssim = evaluate_raindrop(args.test_dir, 'data/LOL/test15/high')
+    ave_psnr, ave_ssim = evaluate_raindrop(args.test_dir, args.test_gt_dir)
+    print('')
     print('PSNR: ', ave_psnr)
     print('SSIM: ', ave_ssim)

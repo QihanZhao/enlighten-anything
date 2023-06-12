@@ -7,6 +7,7 @@ import torch
 import utils
 from PIL import Image
 import logging
+import subprocess
 import argparse
 import torch.utils
 import torch.backends.cudnn as cudnn
@@ -30,13 +31,13 @@ parser.add_argument('--pretrain', type=str, default=None, help='pretrained weigh
 parser.add_argument('--frozen', type=bool, default=False, help='froze the original weights')
 parser.add_argument('--train_dir', type=str, default='data/LOL/train480/low', help='training data directory')
 parser.add_argument('--val_dir', type=str, default='data/LOL/val5/low', help='training data directory')
-parser.add_argument('--m', type=str, default=None, help='comment')
+parser.add_argument('--comment', type=str, default=None, help='comment')
 args = parser.parse_args()
 
 # 根据命令行参数进行设置
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
-snapshot_dir = args.save + '/' + 'Train-{}'.format(time.strftime("%Y%m%d-%H:%M:%S"))
+snapshot_dir = args.save + '/' + 'Train-{}'.format(time.strftime("%Y%m%d-%H%M%S"))
 utils.create_exp_dir(snapshot_dir, scripts_to_save=glob.glob('*.py'))
 model_path = snapshot_dir + '/model_epochs/'
 os.makedirs(model_path, exist_ok=True)
@@ -103,8 +104,8 @@ def main():
     cudnn.enabled = True
     
     # 模型
-    # model = Network(stage=args.stage)
-    model = Network_woCalibrate()
+    model = Network(stage=args.stage)
+    # model = Network_woCalibrate()
     model_init(model)
         # GPU训练的准备2: 模型放到GPU
     model = model.cuda()
@@ -158,31 +159,47 @@ def main():
 
 
         logging.info('train: epoch %3d: average_loss %f', epoch, np.average(losses))
-        logging.info('----------')
+        logging.info('----------validation')
         utils.save(model, os.path.join(model_path, f'weights_{epoch}.pt'))
 
 
-        # model.eval()
+        model.eval()
+        image_path_epoch = image_path + f'/epoch_{epoch}'
+        os.makedirs(image_path_epoch, exist_ok=True)
+        
         # with torch.no_grad():
         #     for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(val_queue):
         #         in_ = in_.cuda()
         #         sem_ = sem_.cuda()
         #         image_name = os.path.splitext(imgname_[0])[0]
-        #         illu_list, ref_list, input_list, atten= model(in_, sem_)
-        #         u_name = f'{image_name}_{epoch}.png' 
-        #         u_path = image_path + '/' + u_name
-        #         save_images(ref_list[0], u_path)
-                
+        #         i, r = model(in_, sem_)
+        #         u_name = '%s.png' % (image_name)
+        #         print('validation processing {}'.format(u_name))
+        #         u_path = image_path_epoch + '/' + u_name
+        #         save_images(r, u_path)        
+        
         with torch.no_grad():
             for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(val_queue):
                 in_ = in_.cuda()
                 sem_ = sem_.cuda()
                 image_name = os.path.splitext(imgname_[0])[0]
-                i, r = model(in_, sem_)
-                u_name = '%s.png' % (image_name)
+                illu_list, ref_list, input_list, atten= model(in_, sem_)
+                u_name = f'{image_name}_{epoch}.png' 
                 print('validation processing {}'.format(u_name))
-                u_path = image_path + '/' + u_name
-                save_images(r, u_path)
+                u_path = image_path_epoch + '/' + u_name
+                save_images(ref_list[0], u_path)
+                
+        process = subprocess.Popen( # 启动子进程并将其标准输出重定向到管道中
+            ['python', 'evaluate.py', '--test_dir', image_path_epoch, '--test_gt_dir', 'data/LOL/val5/high'], 
+            stdout=subprocess.PIPE
+        )
+        output, error = process.communicate() # 从管道中读取标准输出
+        if output: # 记录标准输出到日志中
+            logging.info(output.decode('utf-8'))
+        if error:
+            logging.error(error.decode('utf-8'))
+            
+
         # break
 
 if __name__ == '__main__':

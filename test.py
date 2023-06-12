@@ -14,7 +14,7 @@ from dataset import ImageLowSemDataset
 parser = argparse.ArgumentParser("enlighten-anything")
 parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
 parser.add_argument('--seed', type=int, default=2, help='random seed')
-parser.add_argument('--weights', type=str, default="weights/weights_finetune.pt", help='weights after training with semantic')
+parser.add_argument('--weights', type=str, default="weights/pretrained_SCI/medium.pt", help='weights after training with semantic')
 parser.add_argument('--test_dir', type=str, default='data/LOL/test15/low', help='testing data directory')
 parser.add_argument('--test_output_dir', type=str, default='test_output', help='testing output directory')
 args = parser.parse_args()
@@ -45,6 +45,11 @@ def main():
         print('no gpu device available')
         sys.exit(1)
         
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed) 
+    
     TestDataset = ImageLowSemDataset(img_dir = args.test_dir,
                                        sem_dir = os.path.join(os.path.split(args.test_dir)[0], 'low_semantic'))
     test_queue = torch.utils.data.DataLoader(
@@ -52,7 +57,7 @@ def main():
         pin_memory=True
     )
     
-    model = Network_woCalibrate(args.weights)
+    model = Network_woCalibrate()
     model_init(model)
     model = model.cuda()
 
