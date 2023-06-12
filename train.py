@@ -14,7 +14,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 from model import *
-from multi_read_data import MemoryFriendlyLoader
+from dataset import ImageLowSemDataset
 
 # 该脚本命令行参数 可选项
 parser = argparse.ArgumentParser("enlighten-anything")
@@ -117,9 +117,9 @@ def main():
                                  lr=args.lr*100, betas=(0.9, 0.999), weight_decay=3e-4)
 
     # 数据集 
-    TrainDataset = MemoryFriendlyLoader(img_dir=args.train_dir,        #'../LOL/train480/semantic'
+    TrainDataset = ImageLowSemDataset(img_dir=args.train_dir,        
                                         sem_dir = os.path.join(os.path.split(args.train_dir)[0], 'low_semantic')) 
-    ValDataset = MemoryFriendlyLoader(img_dir=args.val_dir, 
+    ValDataset = ImageLowSemDataset(img_dir=args.val_dir, 
                                       sem_dir = os.path.join(os.path.split(args.val_dir)[0], 'high_semantic'))
     # from torch.utils.data import RandomSampler
     train_queue = torch.utils.data.DataLoader(

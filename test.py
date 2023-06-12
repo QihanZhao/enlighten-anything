@@ -9,7 +9,7 @@ from PIL import Image
 from torch.autograd import Variable
 from model import Network_woCalibrate
 
-from multi_read_data import MemoryFriendlyLoader
+from dataset import ImageLowSemDataset
 
 parser = argparse.ArgumentParser("enlighten-anything")
 parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
@@ -45,11 +45,7 @@ def main():
         print('no gpu device available')
         sys.exit(1)
         
-        #TODO:SAM预处理
-        #weights的保存
-        # 推理网络
-        
-    TestDataset = MemoryFriendlyLoader(img_dir = args.test_dir,
+    TestDataset = ImageLowSemDataset(img_dir = args.test_dir,
                                        sem_dir = os.path.join(os.path.split(args.test_dir)[0], 'low_semantic'))
     test_queue = torch.utils.data.DataLoader(
         TestDataset, batch_size=1, shuffle = False,

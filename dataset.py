@@ -7,7 +7,7 @@ from glob import glob
 import torchvision.transforms as transforms
 import os
 
-class MemoryFriendlyLoader(torch.utils.data.Dataset):
+class ImageLowSemDataset(torch.utils.data.Dataset):
     def __init__(self, img_dir, sem_dir):
         self.low_img_dir = img_dir
         self.sem_dir = sem_dir
