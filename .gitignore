@@ -1,6 +1,7 @@
 # Ignore logs and data files
 exp/*
 data/*
+result/*
 segment_anything/sam_vit_h_4b8939.pth
 
 # Ignore compiled binaries and cache
