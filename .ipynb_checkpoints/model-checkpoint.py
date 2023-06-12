@@ -8,7 +8,7 @@ class SemanticFusionUnit(nn.Module):
         super(SemanticFusionUnit, self).__init__()
         
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels=2*channels, out_channels=channels, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels=channels+3, out_channels=channels, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(channels),
             nn.ReLU()
         )
@@ -58,6 +58,7 @@ class EnhanceNetwork(nn.Module):
 
     def forward(self, input, sem):
         fea = self.in_conv(input)
+        
         fea = fea + self.fusion(fea, sem)
         for conv in self.blocks:
             fea = fea + conv(fea)
@@ -82,6 +83,8 @@ class CalibrateNetwork(nn.Module):
             nn.BatchNorm2d(channels),
             nn.ReLU()
         )
+        
+        # self.fusion = SemanticFusionUnit(channels)
 
         self.convs = nn.Sequential(
             nn.Conv2d(in_channels=channels, out_channels=channels, kernel_size=kernel_size, stride=1, padding=padding),
@@ -100,8 +103,10 @@ class CalibrateNetwork(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, input):
+    def forward(self, input, sem):
         fea = self.in_conv(input)
+        
+        # fea = fea + self.fusion(fea, sem)
         for conv in self.blocks:
             fea = fea + conv(fea)
 
@@ -144,7 +149,7 @@ class Network(nn.Module):
             i = self.enhance(input_op, sem)
             r = input / i
             r = torch.clamp(r, 0, 1)
-            att = self.calibrate(r)
+            att = self.calibrate(r, sem)
             input_op = input + att
             ilist.append(i)
             rlist.append(r)
@@ -160,27 +165,19 @@ class Network(nn.Module):
         return loss
 
 
+class Network_woCalibrate(nn.Module):
 
-class Finetunemodel(nn.Module):
-
-    def __init__(self, weights):
-        super(Finetunemodel, self).__init__()
+    def __init__(self):
+        super().__init__()
         self.enhance = EnhanceNetwork(layers=1, channels=3)
         self._criterion = LossFunction()
-
-        # base_weights = torch.load(weights)
-        # pretrained_dict = base_weights
-        # model_dict = self.state_dict()
-        # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        # model_dict.update(pretrained_dict)
-        # self.load_state_dict(model_dict)
 
     def weights_init(self, m):
         if isinstance(m, nn.Conv2d):
             m.weight.data.normal_(0, 0.02)
             m.bias.data.zero_()
 
-        if isinstance(m, nn.BatchNorm2d):
+        elif isinstance(m, nn.BatchNorm2d):
             m.weight.data.normal_(1., 0.02)
 
     def forward(self, input, sem):
@@ -190,8 +187,9 @@ class Finetunemodel(nn.Module):
         return i, r
 
 
-    def _loss(self, input):
-        i, r = self(input)
+    def _loss(self, input, sem):
+        i, r = self(input, sem)
         loss = self._criterion(input, i)
         return loss
+    
 
