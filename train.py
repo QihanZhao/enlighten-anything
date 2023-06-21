@@ -28,7 +28,8 @@ parser.add_argument('--lr', type=float, default=0.0003, help='learning rate')
 parser.add_argument('--stage', type=int, default=3, help='epochs')
 parser.add_argument('--save', type=str, default='exp/', help='location of the data corpus')
 parser.add_argument('--pretrain', type=str, default=None, help='pretrained weights directory')
-parser.add_argument('--frozen', type=bool, default=False, help='froze the original weights')
+parser.add_argument('--arch', type=str, choices=['WithCalNet', 'WithoutCalNet'], required=True, help='with/without Calibrate Net')
+parser.add_argument('--frozen', type=str, default=None, choices=['CalEnl', 'Cal', 'Enl'], help='froze the original weights')
 parser.add_argument('--train_dir', type=str, default='data/LOL/train480/low', help='training data directory')
 parser.add_argument('--val_dir', type=str, default='data/LOL/val5/low', help='training data directory')
 parser.add_argument('--comment', type=str, default=None, help='comment')
@@ -78,10 +79,10 @@ def model_init(model):
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
         
-        if(args.frozen == True):
+        if(args.frozen != None):
             for param in model.parameters():
                 param.requires_grad = False
-            for param in model.enhance.fusion.parameters():
+            for param in model.enhance.fusion.parameters() if 'Enl' in args.frozen else model.enhance.parameters():
             # for param in model.enhance.parameters():
                 param.requires_grad = True
 
@@ -104,7 +105,7 @@ def main():
     cudnn.enabled = True
     
     # 模型
-    model = Network(stage=args.stage)
+    model = Network(stage=args.stage) if args.arch == 'WithCalNet' else Network_woCalibrate()
     # model = Network_woCalibrate()
     model_init(model)
         # GPU训练的准备2: 模型放到GPU
@@ -167,27 +168,28 @@ def main():
         image_path_epoch = image_path + f'/epoch_{epoch}'
         os.makedirs(image_path_epoch, exist_ok=True)
         
-        # with torch.no_grad():
-        #     for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(val_queue):
-        #         in_ = in_.cuda()
-        #         sem_ = sem_.cuda()
-        #         image_name = os.path.splitext(imgname_[0])[0]
-        #         i, r = model(in_, sem_)
-        #         u_name = '%s.png' % (image_name)
-        #         print('validation processing {}'.format(u_name))
-        #         u_path = image_path_epoch + '/' + u_name
-        #         save_images(r, u_path)        
-        
-        with torch.no_grad():
-            for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(val_queue):
-                in_ = in_.cuda()
-                sem_ = sem_.cuda()
-                image_name = os.path.splitext(imgname_[0])[0]
-                illu_list, ref_list, input_list, atten= model(in_, sem_)
-                u_name = f'{image_name}_{epoch}.png' 
-                print('validation processing {}'.format(u_name))
-                u_path = image_path_epoch + '/' + u_name
-                save_images(ref_list[0], u_path)
+        if args.arch == 'WithCalNet':
+            with torch.no_grad():
+                for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(val_queue):
+                    in_ = in_.cuda()
+                    sem_ = sem_.cuda()
+                    image_name = os.path.splitext(imgname_[0])[0]
+                    illu_list, ref_list, input_list, atten= model(in_, sem_)
+                    u_name = f'{image_name}_{epoch}.png' 
+                    print('validation processing {}'.format(u_name))
+                    u_path = image_path_epoch + '/' + u_name
+                    save_images(ref_list[0], u_path)
+        elif args.arch == 'WithoutCalNet':
+            with torch.no_grad():
+                for batch_idx, (in_, sem_, imgname_, semname_ ) in enumerate(val_queue):
+                    in_ = in_.cuda()
+                    sem_ = sem_.cuda()
+                    image_name = os.path.splitext(imgname_[0])[0]
+                    i, r = model(in_, sem_)
+                    u_name = '%s.png' % (image_name)
+                    print('validation processing {}'.format(u_name))
+                    u_path = image_path_epoch + '/' + u_name
+                    save_images(r, u_path) 
                 
         process = subprocess.Popen( # 启动子进程并将其标准输出重定向到管道中
             ['python', 'evaluate.py', '--test_dir', image_path_epoch, '--test_gt_dir', 'data/LOL/val5/high'], 
